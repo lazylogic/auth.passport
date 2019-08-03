@@ -25,6 +25,6 @@ Route::middleware( 'guest' )->group( function () {
 
 // 인증(로그인)이 필요한 API
 Route::middleware( 'auth:api' )->group( function () {
-    Route::get( 'logout', 'AuthController@logout' );
-    Route::get( 'me', 'UserController@me' );
+    Route::get( 'me', 'AuthController@me' );
+    Route::post( 'logout', 'AuthController@logout' );
 } );
