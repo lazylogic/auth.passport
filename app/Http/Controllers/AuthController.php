@@ -54,6 +54,7 @@ class AuthController extends Controller
         $tokenResult = $user->createToken( 'Personal Access Token' );
         $token       = $tokenResult->token;
 
+        // 의미 없음. 기본 1년
         if ( $request->filled( 'remember_me' ) ) {
             $token->expires_at = Carbon::now()->addWeeks( 1 ); # 토큰 유효 기간은 원하는 대로 지정
         }
