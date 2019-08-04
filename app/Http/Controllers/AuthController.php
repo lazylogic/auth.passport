@@ -13,8 +13,6 @@ class AuthController extends Controller
 {
     public function signup( Request $request )
     {
-        return phpinfo();
-
         $validator = Validator::make( $request->all(), [
             'name'     => 'required|string',
             'email'    => 'required|string|email|unique:users',
