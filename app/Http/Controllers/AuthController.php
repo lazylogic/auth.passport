@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\User;
 use Carbon\Carbon;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -11,6 +13,12 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware( 'signed' )->only( 'verify' );
+        $this->middleware( 'throttle:6,1' )->only( 'verify', 'resend' );
+    }
+
     public function signup( Request $request )
     {
         $validator = Validator::make( $request->all(), [
@@ -33,6 +41,8 @@ class AuthController extends Controller
         ] );
         $user->save();
 
+        $user->sendEmailVerificationNotification();
+
         return response()->json( [
             'message' => 'Successfully created user!',
         ], 201 );
@@ -52,12 +62,12 @@ class AuthController extends Controller
         $tokenResult = $user->createToken( 'Personal Access Token' );
         $token       = $tokenResult->token;
 
-        // 의미 없음. 기본 1년
-        if ( $request->filled( 'remember_me' ) ) {
-            $token->expires_at = Carbon::now()->addWeeks( 1 ); # 토큰 유효 기간은 원하는 대로 지정
+        // remember_me가 설정 되지 않은 경우, 유효시간을 짧게 설정
+        // ToDO : remember_me 설정
+        if ( ! $request->filled( 'remember_me' ) ) {
+            $token->expires_at = Carbon::now()->addDay(); # 토큰 유효 기간은 원하는 대로 지정
+            $token->save();
         }
-
-        $token->save();
 
         return response()->json( [
             'access_token' => $tokenResult->accessToken,
@@ -68,9 +78,26 @@ class AuthController extends Controller
         ] );
     }
 
-    public function me( Request $request )
+    public function auth( Request $request )
     {
         return response()->json( Auth::user() );
+    }
+
+    public function verify( Request $request )
+    {
+        if ( ! ( $user = User::find( $request->get( 'id' ) ) ) ) {
+            throw new AuthorizationException();
+        }
+
+        if ( $user->hasVerifiedEmail() ) {
+            return response()->json( $user );
+        }
+
+        if ( $user->markEmailAsVerified() ) {
+            event( new Verified( $user ) );
+        }
+
+        return response()->json( $user );
     }
 
     public function logout( Request $request )

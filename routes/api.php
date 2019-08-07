@@ -23,8 +23,11 @@ Route::middleware( 'guest' )->group( function () {
     Route::post( 'login', 'AuthController@login' );
 } );
 
+# Route URL : /api/verify
+Route::post( 'verify', 'AuthController@verify' )->name( 'verification.verify' );
+
 // 인증(로그인)이 필요한 API
 Route::middleware( 'auth:api' )->group( function () {
-    Route::get( 'me', 'AuthController@me' );
+    Route::post( 'auth', 'AuthController@auth' );
     Route::post( 'logout', 'AuthController@logout' );
 } );
